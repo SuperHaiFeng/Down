@@ -12,7 +12,8 @@ import libcmark
 public protocol DownHTMLRenderable: DownRenderable {
 
     func toHTML(_ options: DownOptions) throws -> String
-
+    
+    func toHTMLFromGFM(_ options: DownOptions) throws -> String
 }
 
 extension DownHTMLRenderable {
@@ -31,7 +32,13 @@ extension DownHTMLRenderable {
     public func toHTML(_ options: DownOptions = .default) throws -> String {
         return try markdownString.toHTML(options)
     }
-
+    
+    /// Use GFM generates an HTML string from the `markdownString` property.
+    /// - Parameter options: `DownOptions` to modify parsing or rendering, defaulting to `.default`.
+    /// - Returns: <#description#>
+    public func toHTMLFromGFM(_ options: DownOptions = .default) throws -> String {
+        return try markdownString.toHTMLFromGFM(options)
+    }
 }
 
 public struct DownHTMLRenderer {
