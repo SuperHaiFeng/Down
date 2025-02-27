@@ -126,6 +126,10 @@ open class DownView: WKWebView {
 
     private var didLoadSuccessfully: DownViewClosure?
 
+    public func loadHtml(html: String) throws {
+        let pageHTMLString = try htmlFromTemplate(html)
+        loadHTMLString(pageHTMLString, baseURL: baseURL)
+    }
 }
 
 // MARK: - Private API
@@ -133,7 +137,11 @@ open class DownView: WKWebView {
 private extension DownView {
 
     func loadHTMLView(_ markdownString: String) throws {
-        let htmlString = try markdownString.toHTML(options)
+//        基于CommonMark的markdown解析器
+//        let htmlString = try markdownString.toHTML(options)
+        
+        // 基于GFM的markdown解析器
+        let htmlString = try markdownString.toHTMLFromGFM(options)
         let pageHTMLString = try htmlFromTemplate(htmlString)
 
         #if os(iOS)

@@ -84,5 +84,35 @@ public struct DownASTRenderer {
 
         return ast
     }
+    
+    /// Generates an abstract syntax tree from the given GFM Markdown string.
+    /// - Parameters:
+    ///   - string: A string containing CommonMark Markdown.
+    ///   - options: `DownOptions` to modify parsing or rendering, defaulting to `.default`.
+    /// - Returns: An abstract syntax tree representation of the Markdown input. extensions
+    public static func stringToASTFromGFM(_ string: String, options: DownOptions = .default) throws -> (ast: CMarkNode, extensions: UnsafeMutablePointer<cmark_llist>?) {
+        cmark_gfm_core_extensions_ensure_registered()
+        let parser = cmark_parser_new(options.rawValue)
+
+        if let tableExtension = cmark_find_syntax_extension("table") {
+            cmark_parser_attach_syntax_extension(parser, tableExtension)
+        }
+        
+        if let tasklistExtension = cmark_find_syntax_extension("tasklist") {
+            cmark_parser_attach_syntax_extension(parser, tasklistExtension)
+        }
+        
+        let markdownData = string.data(using: .utf8)!
+        cmark_parser_feed(parser, markdownData.withUnsafeBytes { $0.baseAddress?.assumingMemoryBound(to: CChar.self) }, markdownData.count)
+        let ast = cmark_parser_finish(parser)
+        cmark_parser_free(parser)
+        
+        let extensions = cmark_parser_get_syntax_extensions(parser)
+        guard let ast = ast else {
+            throw DownErrors.markdownToASTError
+        }
+        
+        return (ast, extensions)
+    }
 
 }

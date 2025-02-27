@@ -51,10 +51,32 @@ public struct DownHTMLRenderer {
     ///     `ASTRenderingError` if the AST could not be converted.
 
     public static func astToHTML(_ ast: CMarkNode, options: DownOptions = .default) throws -> String {
-        guard let cHTMLString = cmark_render_html(ast, options.rawValue) else {
+        guard let cHTMLString = cmark_render_html(ast, options.rawValue, nil) else {
+            throw DownErrors.astRenderingError
+        }
+        
+        defer {
+            free(cHTMLString)
+        }
+
+        guard let htmlString = String(cString: cHTMLString, encoding: String.Encoding.utf8) else {
             throw DownErrors.astRenderingError
         }
 
+        return htmlString
+    }
+    
+    /// Generates an HTML string from the given abstract syntax tree.
+    /// - Parameters:
+    ///   - ast: cmark_node` representing the abstract syntax tree.
+    ///   - extensions: GFM extensions to modify parsing or rendering
+    ///   - options: `DownOptions` to modify parsing or rendering, defaulting to `.default`.
+    /// - Returns: An HTML string.
+    public static func astToHTMLFromGFM(_ ast: CMarkNode, extensions: UnsafeMutablePointer<cmark_llist>?, options: DownOptions = .default) throws -> String {
+        guard let cHTMLString = cmark_render_html(ast, options.rawValue, extensions) else {
+            throw DownErrors.astRenderingError
+        }
+        
         defer {
             free(cHTMLString)
         }

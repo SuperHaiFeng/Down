@@ -27,5 +27,17 @@ extension String {
         cmark_node_free(ast)
         return html
     }
-
+    
+    /// Generates an HTML string from the contents of the string (self), which should contain CommonMark Markdown.
+    /// - Parameter options: `DownOptions` to modify parsing or rendering, defaulting to `.default`.
+    /// - Returns: <#description#>
+    public func toHTMLFromGFM(_ options: DownOptions = .default) throws -> String {
+        let ast = try DownASTRenderer.stringToASTFromGFM(self, options: options)
+        let html = try DownHTMLRenderer.astToHTMLFromGFM(ast.ast, extensions: ast.extensions, options: options)
+        defer {
+            cmark_node_free(ast.ast)
+        }
+        print("======\(html)")
+        return html
+    }
 }
