@@ -7,3 +7,51 @@ hr,img{box-sizing:content-box}body:after,body:before,hr::after,hr::before{displa
 /*! highlightjs */
 .hljs{display:block;overflow-x:auto;padding:.5em;background:#1d1f21;color:#c5c8c6}.hljs span::selection,.hljs::selection{background:#373b41}.hljs span::-moz-selection,.hljs::-moz-selection{background:#373b41}.hljs-name,.hljs-title{color:#f0c674}.hljs-comment,.hljs-meta,.hljs-meta .hljs-keyword{color:#707880}.hljs-deletion,.hljs-link,.hljs-literal,.hljs-number,.hljs-symbol{color:#c66}.hljs-addition,.hljs-doctag,.hljs-regexp,.hljs-selector-attr,.hljs-selector-pseudo,.hljs-string{color:#b5bd68}.hljs-attribute,.hljs-code,.hljs-selector-id{color:#b294bb}.hljs-bullet,.hljs-keyword,.hljs-selector-tag,.hljs-tag{color:#81a2be}.hljs-subst,.hljs-template-tag,.hljs-template-variable,.hljs-variable{color:#8abeb7}.hljs-built_in,.hljs-builtin-name,.hljs-quote,.hljs-section,.hljs-selector-class,.hljs-type{color:#de935f}.hljs-emphasis{font-style:italic}.hljs-strong{font-weight:700}
 
+.code-wrapper {
+    position: relative;
+    display: inline-block;
+    width: 100%;
+}
+
+.code-lang-label {
+    position: absolute;
+    top: 5px;
+    left: 5px;
+    background: clear;
+    color: white;
+    font-size: 13px;
+    padding: 3px 8px;
+    border-radius: 3px;
+    font-family: monospace;
+    opacity: 0.8;
+}
+
+.copy-button {
+    position: absolute;
+    top: 5px;
+    right: 5px;
+    background: #1d1f21;
+    color: white;
+    border: none;
+    padding: 5px 5px;
+    font-size: 14px;
+    cursor: pointer;
+    height: 25px;
+    display: flex;
+    place-items: center;
+    border-radius: 4px;
+    opacity: 1;
+    transition: opacity 0.2s;
+}
+
+.copy-button:hover {
+    opacity: 1;
+}
+
+pre {
+    position: relative;
+    padding-top: 35px;
+    border-radius: 8px;
+    background: #373b41;
+    overflow-x: auto;
+}
