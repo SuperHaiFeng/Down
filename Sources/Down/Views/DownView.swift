@@ -125,11 +125,6 @@ open class DownView: WKWebView {
     #endif
 
     private var didLoadSuccessfully: DownViewClosure?
-
-    public func loadHtml(html: String) throws {
-        let pageHTMLString = try htmlFromTemplate(html)
-        loadHTMLString(pageHTMLString, baseURL: baseURL)
-    }
 }
 
 // MARK: - Private API
