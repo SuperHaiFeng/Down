@@ -113,9 +113,9 @@ public struct DownASTRenderer {
         if let tagfilterExtension = cmark_find_syntax_extension("tagfilter") {
             cmark_parser_attach_syntax_extension(parser, tagfilterExtension)
         }
-        
-        let markdownData = string.data(using: .utf8)!
-        cmark_parser_feed(parser, markdownData.withUnsafeBytes { $0.baseAddress?.assumingMemoryBound(to: CChar.self) }, markdownData.count)
+        if let markdownData = string.data(using: .utf8) {
+            cmark_parser_feed(parser, markdownData.withUnsafeBytes { $0.baseAddress?.assumingMemoryBound(to: CChar.self) }, markdownData.count)
+        }
         let ast = cmark_parser_finish(parser)
         cmark_parser_free(parser)
         
