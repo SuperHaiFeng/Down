@@ -25,9 +25,12 @@ Is your app using it? [Let us know!](mailto:rob@robphillips.me)
 
 ### Support extensions
 
-| Header 1 | Header 2 | Header 2 | Header 2 |
-|----------|----------|----------|----------|
-| Cell 1   | Cell 2   | Cell 2   | Cell 2   |
+|Swift Version|Tag|
+| --- | --- |
+| Swift 5.1 | >= 0.9.0 |
+| Swift 5.0 | >= 0.8.1 |
+| Swift 4 | >= 0.4.x |
+| Swift 3 | 0.3.x |
 
 - [ ] 完成项目文档初稿
 - [x] 参加团队会议
