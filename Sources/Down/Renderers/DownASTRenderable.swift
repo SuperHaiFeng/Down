@@ -102,6 +102,18 @@ public struct DownASTRenderer {
             cmark_parser_attach_syntax_extension(parser, tasklistExtension)
         }
         
+        if let autolinkExtension = cmark_find_syntax_extension("autolink") {
+            cmark_parser_attach_syntax_extension(parser, autolinkExtension)
+        }
+        
+        if let strikethroughExtension = cmark_find_syntax_extension("strikethrough") {
+            cmark_parser_attach_syntax_extension(parser, strikethroughExtension)
+        }
+        
+        if let tagfilterExtension = cmark_find_syntax_extension("tagfilter") {
+            cmark_parser_attach_syntax_extension(parser, tagfilterExtension)
+        }
+        
         let markdownData = string.data(using: .utf8)!
         cmark_parser_feed(parser, markdownData.withUnsafeBytes { $0.baseAddress?.assumingMemoryBound(to: CChar.self) }, markdownData.count)
         let ast = cmark_parser_finish(parser)
