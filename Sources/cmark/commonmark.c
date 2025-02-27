@@ -5,15 +5,16 @@
 #include <assert.h>
 
 #include "config.h"
-#include "cmark.h"
+#include "cmark-gfm.h"
 #include "node.h"
 #include "buffer.h"
 #include "utf8.h"
 #include "scanners.h"
 #include "render.h"
+#include "syntax_extension.h"
 
-#define OUT(s, wrap, escaping) renderer->out(renderer, s, wrap, escaping)
-#define LIT(s) renderer->out(renderer, s, false, LITERAL)
+#define OUT(s, wrap, escaping) renderer->out(renderer, node, s, wrap, escaping)
+#define LIT(s) renderer->out(renderer, node, s, false, LITERAL)
 #define CR() renderer->cr(renderer)
 #define BLANKLINE() renderer->blankline(renderer)
 #define ENCODED_SIZE 20
@@ -21,7 +22,8 @@
 
 // Functions to convert cmark_nodes to commonmark strings.
 
-static CMARK_INLINE void outc(cmark_renderer *renderer, cmark_escaping escape,
+static CMARK_INLINE void outc(cmark_renderer *renderer, cmark_node *node, 
+                              cmark_escaping escape,
                               int32_t c, unsigned char nextc) {
   bool needs_escaping = false;
   bool follows_digit =
@@ -34,7 +36,7 @@ static CMARK_INLINE void outc(cmark_renderer *renderer, cmark_escaping escape,
       ((escape == NORMAL &&
         (c < 0x20 ||
 	 c == '*' || c == '_' || c == '[' || c == ']' || c == '#' || c == '<' ||
-         c == '>' || c == '\\' || c == '`' || c == '!' ||
+         c == '>' || c == '\\' || c == '`' || c == '~' || c == '!' ||
          (c == '&' && cmark_isalpha(nextc)) || (c == '!' && nextc == '[') ||
          (renderer->begin_content && (c == '-' || c == '+' || c == '=') &&
           // begin_content doesn't get set to false til we've passed digits
@@ -43,24 +45,24 @@ static CMARK_INLINE void outc(cmark_renderer *renderer, cmark_escaping escape,
          (renderer->begin_content && (c == '.' || c == ')') && follows_digit &&
           (nextc == 0 || cmark_isspace(nextc))))) ||
        (escape == URL &&
-        (c == '`' || c == '<' || c == '>' || cmark_isspace(c) || c == '\\' ||
+        (c == '`' || c == '<' || c == '>' || cmark_isspace((char)c) || c == '\\' ||
          c == ')' || c == '(')) ||
        (escape == TITLE &&
         (c == '`' || c == '<' || c == '>' || c == '"' || c == '\\')));
 
   if (needs_escaping) {
-    if (escape == URL && cmark_isspace(c)) {
+    if (escape == URL && cmark_isspace((char)c)) {
       // use percent encoding for spaces
       snprintf(encoded, ENCODED_SIZE, "%%%2X", c);
       cmark_strbuf_puts(renderer->buffer, encoded);
       renderer->column += 3;
-    } else if (cmark_ispunct(c)) {
+    } else if (cmark_ispunct((char)c)) {
       cmark_render_ascii(renderer, "\\");
       cmark_render_code_point(renderer, c);
     } else { // render as entity
       snprintf(encoded, ENCODED_SIZE, "&#%d;", c);
       cmark_strbuf_puts(renderer->buffer, encoded);
-      renderer->column += strlen(encoded);
+      renderer->column += (int)strlen(encoded);
     }
   } else {
     cmark_render_code_point(renderer, c);
@@ -151,24 +153,8 @@ static bool is_autolink(cmark_node *node) {
                   link_text->as.literal.len) == 0);
 }
 
-// if node is a block node, returns node.
-// otherwise returns first block-level node that is an ancestor of node.
-// if there is no block-level ancestor, returns NULL.
-static cmark_node *get_containing_block(cmark_node *node) {
-  while (node) {
-    if (node->type >= CMARK_NODE_FIRST_BLOCK &&
-        node->type <= CMARK_NODE_LAST_BLOCK) {
-      return node;
-    } else {
-      node = node->parent;
-    }
-  }
-  return NULL;
-}
-
 static int S_render_node(cmark_renderer *renderer, cmark_node *node,
                          cmark_event_type ev_type, int options) {
-  cmark_node *tmp;
   int list_number;
   cmark_delim_type list_delim;
   int numticks;
@@ -179,7 +165,7 @@ static int S_render_node(cmark_renderer *renderer, cmark_node *node,
   char fencechar[2] = {'\0', '\0'};
   size_t info_len, code_len;
   char listmarker[LISTMARKER_SIZE];
-  char *emph_delim;
+  const char *emph_delim;
   bool first_in_list_item;
   bufsize_t marker_width;
   bool allow_wrap = renderer->width > 0 && !(CMARK_OPT_NOBREAKS & options) &&
@@ -188,14 +174,22 @@ static int S_render_node(cmark_renderer *renderer, cmark_node *node,
   // Don't adjust tight list status til we've started the list.
   // Otherwise we loose the blank line between a paragraph and
   // a following list.
-  if (!(node->type == CMARK_NODE_ITEM && node->prev == NULL && entering)) {
-    tmp = get_containing_block(node);
-    renderer->in_tight_list_item =
-        tmp && // tmp might be NULL if there is no containing block
-        ((tmp->type == CMARK_NODE_ITEM &&
-          cmark_node_get_list_tight(tmp->parent)) ||
-         (tmp && tmp->parent && tmp->parent->type == CMARK_NODE_ITEM &&
-          cmark_node_get_list_tight(tmp->parent->parent)));
+  if (entering) {
+    if (node->parent && node->parent->type == CMARK_NODE_ITEM) {
+      renderer->in_tight_list_item = node->parent->parent->as.list.tight;
+    }
+  } else {
+    if (node->type == CMARK_NODE_LIST) {
+      renderer->in_tight_list_item =
+        node->parent &&
+        node->parent->type == CMARK_NODE_ITEM &&
+        node->parent->parent->as.list.tight;
+    }
+  }
+
+  if (node->extension && node->extension->commonmark_render_func) {
+    node->extension->commonmark_render_func(node->extension, renderer, node, ev_type, options);
+    return 1;
   }
 
   switch (node->type) {
@@ -228,20 +222,15 @@ static int S_render_node(cmark_renderer *renderer, cmark_node *node,
     if (cmark_node_get_list_type(node->parent) == CMARK_BULLET_LIST) {
       marker_width = 4;
     } else {
-      list_number = cmark_node_get_list_start(node->parent);
+      list_number = cmark_node_get_item_index(node);
       list_delim = cmark_node_get_list_delim(node->parent);
-      tmp = node;
-      while (tmp->prev) {
-        tmp = tmp->prev;
-        list_number += 1;
-      }
       // we ensure a width of at least 4 so
       // we get nice transition from single digits
       // to double
       snprintf(listmarker, LISTMARKER_SIZE, "%d%s%s", list_number,
                list_delim == CMARK_PAREN_DELIM ? ")" : ".",
                list_number < 10 ? "  " : " ");
-      marker_width = strlen(listmarker);
+      marker_width = (bufsize_t)strlen(listmarker);
     }
     if (entering) {
       if (cmark_node_get_list_type(node->parent) == CMARK_BULLET_LIST) {
@@ -399,10 +388,12 @@ static int S_render_node(cmark_renderer *renderer, cmark_node *node,
     break;
 
   case CMARK_NODE_STRONG:
-    if (entering) {
-      LIT("**");
-    } else {
-      LIT("**");
+    if (node->parent == NULL || node->parent->type != CMARK_NODE_STRONG) {
+      if (entering) {
+        LIT("**");
+      } else {
+        LIT("**");
+      }
     }
     break;
 
@@ -468,6 +459,39 @@ static int S_render_node(cmark_renderer *renderer, cmark_node *node,
     }
     break;
 
+  case CMARK_NODE_FOOTNOTE_REFERENCE:
+    if (entering) {
+      LIT("[^");
+
+      char *footnote_label = renderer->mem->calloc(node->parent_footnote_def->as.literal.len + 1, sizeof(char));
+      memmove(footnote_label, node->parent_footnote_def->as.literal.data, node->parent_footnote_def->as.literal.len);
+
+      OUT(footnote_label, false, LITERAL);
+      renderer->mem->free(footnote_label);
+
+      LIT("]");
+    }
+    break;
+
+  case CMARK_NODE_FOOTNOTE_DEFINITION:
+    if (entering) {
+      renderer->footnote_ix += 1;
+      LIT("[^");
+
+      char *footnote_label = renderer->mem->calloc(node->as.literal.len + 1, sizeof(char));
+      memmove(footnote_label, node->as.literal.data, node->as.literal.len);
+
+      OUT(footnote_label, false, LITERAL);
+      renderer->mem->free(footnote_label);
+
+      LIT("]:\n");
+
+      cmark_strbuf_puts(renderer->prefix, "    ");
+    } else {
+      cmark_strbuf_truncate(renderer->prefix, renderer->prefix->size - 4);
+    }
+    break;
+
   default:
     assert(false);
     break;
@@ -477,10 +501,14 @@ static int S_render_node(cmark_renderer *renderer, cmark_node *node,
 }
 
 char *cmark_render_commonmark(cmark_node *root, int options, int width) {
+  return cmark_render_commonmark_with_mem(root, options, width, cmark_node_mem(root));
+}
+
+char *cmark_render_commonmark_with_mem(cmark_node *root, int options, int width, cmark_mem *mem) {
   if (options & CMARK_OPT_HARDBREAKS) {
     // disable breaking on width, since it has
     // a different meaning with OPT_HARDBREAKS
     width = 0;
   }
-  return cmark_render(root, options, width, outc, S_render_node);
+  return cmark_render(mem, root, options, width, outc, S_render_node);
 }
