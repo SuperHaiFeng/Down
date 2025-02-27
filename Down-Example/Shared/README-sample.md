@@ -8,7 +8,7 @@
 [![tvOS](https://img.shields.io/badge/OS-tvOS-orange.svg)](https://developer.apple.com/tvos/)
 [![Coverage Status](https://coveralls.io/repos/github/iwasrobbed/Down/badge.svg?branch=master)](https://coveralls.io/github/iwasrobbed/Down?branch=master)
 
-Blazing fast Markdown (CommonMark) rendering in Swift, built upon [cmark v0.28.3](https://github.com/commonmark/cmark).
+Blazing fast Markdown (CommonMark and Extensions) rendering in Swift, built upon [cmark-gfm](https://github.com/github/cmark-gfm).
 
 Is your app using it? [Let us know!](mailto:rob@robphillips.me)
 
@@ -23,6 +23,22 @@ Is your app using it? [Let us know!](mailto:rob@robphillips.me)
 - [Chris Zielinski](https://github.com/chriszielinski)
 - [Other contributors](https://github.com/iwasrobbed/Down/graphs/contributors) 🙌
 
+### Support extensions
+
+| Header 1 | Header 2 | Header 2 | Header 2 |
+|----------|----------|----------|----------|
+| Cell 1   | Cell 2   | Cell 2   | Cell 2   |
+
+- [ ] 完成项目文档初稿
+- [x] 参加团队会议
+- [ ] 与客户沟通需求
+
+这是一段 ~~带有删除线~~ 的文本
+
+这是一段包含 <script>alert('危险代码')</script> 的 Markdown 文本。
+
+访问 https://www.example.com 获取更多信息
+
 ### Installation
 
 Note: Swift 4 support is now on the `master` branch and any tag >= 0.4.x (Swift 3 is 0.3.x)
@@ -30,7 +46,7 @@ Note: Swift 4 support is now on the `master` branch and any tag >= 0.4.x (Swift 
 Quickly install using [CocoaPods](https://cocoapods.org):
 
 ```ruby
-pod 'Down'
+pod 'Down', :git => 'https://github.com/SuperHaiFeng/Down.git'
 ```
 
 Or [Carthage](https://github.com/Carthage/Carthage):

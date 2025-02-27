@@ -37,7 +37,6 @@ extension String {
         defer {
             cmark_node_free(ast.ast)
         }
-        print("======\(html)")
         return html
     }
 }
