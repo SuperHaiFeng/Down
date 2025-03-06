@@ -132,10 +132,6 @@ open class DownView: WKWebView {
 private extension DownView {
 
     func loadHTMLView(_ markdownString: String) throws {
-//        基于CommonMark的markdown解析器
-//        let htmlString = try markdownString.toHTML(options)
-        
-        // 基于GFM的markdown解析器
         let htmlString = try markdownString.toHTMLFromGFM(options)
         let pageHTMLString = try htmlFromTemplate(htmlString)
 
