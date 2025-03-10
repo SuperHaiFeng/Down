@@ -35,6 +35,7 @@ extension String {
         let ast = try DownASTRenderer.stringToASTFromGFM(self, options: options)
         let html = try DownHTMLRenderer.astToHTMLFromGFM(ast.ast, extensions: ast.extensions, options: options)
         defer {
+            cmark_parser_free(ast.parser)
             cmark_node_free(ast.ast)
         }
         return html

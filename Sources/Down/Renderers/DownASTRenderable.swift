@@ -90,7 +90,7 @@ public struct DownASTRenderer {
     ///   - string: A string containing CommonMark Markdown.
     ///   - options: `DownOptions` to modify parsing or rendering, defaulting to `.default`.
     /// - Returns: An abstract syntax tree representation of the Markdown input. extensions
-    public static func stringToASTFromGFM(_ string: String, options: DownOptions = .default) throws -> (ast: CMarkNode, extensions: UnsafeMutablePointer<cmark_llist>?) {
+    public static func stringToASTFromGFM(_ string: String, options: DownOptions = .default) throws -> (ast: CMarkNode, extensions: UnsafeMutablePointer<cmark_llist>?, parser: OpaquePointer?) {
         cmark_gfm_core_extensions_ensure_registered()
         let parser = cmark_parser_new(options.rawValue)
 
@@ -118,14 +118,13 @@ public struct DownASTRenderer {
             cmark_parser_feed_reentrant(parser, $0, stringLength)
         }
         let ast = cmark_parser_finish(parser)
-        cmark_parser_free(parser)
         
         let extensions = cmark_parser_get_syntax_extensions(parser)
         guard let ast = ast else {
             throw DownErrors.markdownToASTError
         }
         
-        return (ast, extensions)
+        return (ast, extensions, parser)
     }
 
 }
